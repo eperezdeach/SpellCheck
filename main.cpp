@@ -23,7 +23,7 @@ int main(int argc, char * argv[]) {
     WriteHTML html; //html: Class that will be called to write the HTML
     html.beginHTML();// start html
 
-    std::string in = "test_1 copy.txt";//text to be read
+    std::string in = "test_1.txt";//text to be read
     std::ifstream input(in);
     if(!input) { std::cerr << "ERROR WITH INPUT FILE: " << in; return -1; }
 
@@ -36,34 +36,29 @@ int main(int argc, char * argv[]) {
     bool f,c;//f: check is word is correct/ c: check if word has contraction/ g check for guion
     for (auto w:vec){//loop vec
         found = dict.find(w);
-        std::string tmp,tmp1;//tmp: temporal string
+        std::string tmp;//tmp: temporal string
         if(found!=std::string::npos){
             f=true; //found
-        } else {
-            bool h =FindHyphen(w);
-            if (h)
-            {
-                
-            }
+        }
+        else {
+            f = false;
+            tmp = w;//copy w in tmp
+            tmp = Cap2Low(tmp);//convert to lower cases
+            tmp = DelSpecChar(tmp);//delete special characters
+            if (tmp.length() == 0) { f = true; }
+            found = dict.find(tmp);
+            if (found != std::string::npos) { f = true; }
             else {
-                f = false;
-                tmp = w;//copy w in tmp
-                tmp = Cap2Low(tmp);//convert to lower cases
-                tmp = DelSpecChar(tmp);//delete special characters
-                if (tmp.length() == 0) { f = true; }
-                found = dict.find(tmp);
-                if (found != std::string::npos) { f = true; }
-                else {
-                    c = WordContr(tmp); //search for contraction
-                    if (c) {
-                        tmp = ContraccionOK(tmp);//return tmp without contrac.
-                        found = dict.find(tmp);
-                        if (found != std::string::npos) { f = true; }
-                    } else {
-                        f = IsNum(tmp);
-                    }
+                c = WordContr(tmp); //search for contraction
+                if (c) {
+                    tmp = ContraccionOK(tmp);//return tmp without contrac.
+                    found = dict.find(tmp);
+                    if (found != std::string::npos) { f = true; }
+                } else {
+                    f = IsNum(tmp);
                 }
             }
+
         }
 
         html.checkWord(f,w);//write html
