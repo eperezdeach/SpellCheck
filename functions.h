@@ -11,5 +11,7 @@ std::string ContraccionOK (std::string word);
 bool WordContr (const std::string word);
 void dict2str(std::string &d);
 void wrds_line(const std::string ln, std::vector<std::string>& v);
+/*std::string GuionPre (std::string word);
+std::string GuionPost (std::string word);*/
 bool FindHyphen (std::string word);
 
