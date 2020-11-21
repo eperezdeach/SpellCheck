@@ -3,6 +3,7 @@
  * INPUT: std::string -> STRING THAT WILL BE CONVERTED TO LOWER CASE
  * OUTPUT: std::string <- RETURN THE STRING IN LOWER CASE
  */
+
 #include <iostream>
 #include <fstream>
 #include <sstream>
@@ -29,16 +30,7 @@ void wrds_line(const std::string ln, std::vector<std::string>& v){
     std::stringstream check(ln);
     std::string word;
     while(getline(check,word,' ')){
-        /*bool h = FindHyphen(word);
-        if (h){
-            std::stringstream hyphen(word);
-            std::string split_word;
-            while (getline(hyphen,split_word, '-'))
-            {
-                v.push_back(split_word); //add word to vec
-            }
-        }
-        else*/ v.push_back(word); //add word to vec
+         v.push_back(word); //add word to vec
     }
     v.emplace_back("<br>\n");
 }//Break the line into words
@@ -174,7 +166,8 @@ bool WordContr (const std::string word){
     return contr;
 }
 
-bool FindHyphen (std::string word)
+//FUNCIONES DE HYPHEN
+/*bool FindHyphen (std::string word)
 {
     for (int i = 0; i < word.length() - 1; i ++ )
     {
@@ -187,7 +180,7 @@ bool FindHyphen (std::string word)
     return false;
 }
 
-/*std::string GuionPre (std::string word) {
+std::string GuionPre (std::string word) {
     //Separo pre y post guion
     std::vector<std::string> token; //token: vector that saves the word and contraction
     std::string tmp = word; //tmp: temporary string
@@ -215,4 +208,4 @@ std::string GuionPost (std::string word) {
     std::string wrd2 = token[1]; //contr: contraction of word
     //std::string wrd1 = token[0]; //wrd: word without contraction
     return wrd2;
-} */
+}*/
