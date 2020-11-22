@@ -1,70 +1,97 @@
-
 #include <iostream>
 #include <fstream>
-#include <sstream>
 #include <string>
 #include <thread>
 #include <vector>
-#include "functions.h"
-#include "class.h"
+#include <set>
+#include "functions.cpp"
 
-std::string dict; //dict: Global variable that contains the dictionary in string format
+using namespace std::chrono_literals;
 
-int main(int argc, char * argv[]) {
+std::set<std::string> dict = {"<br>\n"}; //dict: Global variable that contains the dictionary in string format
+std::mutex mut;
+std::mutex _files;
+std::condition_variable data_cond;
 
-    if(argc < 3){std::cerr << "ERROR: NOT ENOUGH ARGUMENTS!\n";return -1;}
-    auto start = std::chrono::steady_clock::now();
-    dict2str(dict);
+void Read(const char* file,std::vector<std::string> &ln_v,std::vector<std::string> &wrds_v){
+    std::ifstream in(file);
+    std::string line;
+    bool found;
+    //std::cout << "Opening file...\n";
 
-
-    std::string line; //line: line to be read of the input text
-    std::vector<std::string> vec;//vec: vector that will contain the words of line
-    std::size_t found;
-    WriteHTML html; //html: Class that will be called to write the HTML
-    html.beginHTML();// start html
-
-    std::string in = "test_1.txt";//text to be read
-    std::ifstream input(in);
-    if(!input) { std::cerr << "ERROR WITH INPUT FILE: " << in; return -1; }
-
-    while(getline(input, line)){//
-        //thread t:
-        std::thread t(wrds_line,std::ref(line),std::ref(vec));
-        t.join();
-    }
-
-    bool f,c;//f: check is word is correct/ c: check if word has contraction/ g check for guion
-    for (auto w:vec){//loop vec
-        found = dict.find(w);
+    std::unique_lock<std::mutex> lock(mut);
+    while(getline(in,line)){
+        wrds_v.clear();
+        SeparateWords(line, wrds_v);
+        bool f, c;
         std::string tmp;//tmp: temporal string
-        if(found!=std::string::npos){
-            f=true; //found
-        }
-        else {
-            f = false;
-            tmp = w;//copy w in tmp
-            tmp = Cap2Low(tmp);//convert to lower cases
-            tmp = DelSpecChar(tmp);//delete special characters
-            if (tmp.length() == 0) { f = true; }
-            found = dict.find(tmp);
-            if (found != std::string::npos) { f = true; }
-            else {
-                c = WordContr(tmp); //search for contraction
-                if (c) {
-                    tmp = ContraccionOK(tmp);//return tmp without contrac.
-                    found = dict.find(tmp);
-                    if (found != std::string::npos) { f = true; }
-                } else {
-                    f = IsNum(tmp);
+        std::string tmp_line;//tmp: temporal
+        for (auto w: wrds_v){
+            found = dict.find(w) != dict.end();
+            if(!found) {
+                tmp=w;//copy w in tmp
+                found=IsNum(tmp);
+                tmp=Cap2Low(tmp);//convert to lower cases
+                c=WordContr(tmp);
+                if (c){
+                    tmp=ContraccionOK(tmp);
                 }
+                if(!found){found = dict.find(tmp)!= dict.end();}
             }
-
+            if(!found){
+                w = "<a style=\"color:red\">" + w + "</a>";
+            }
+            tmp_line+=w;
         }
+        if (tmp_line!=line){
+            line = tmp_line;
+        }
+        ln_v.push_back(line);
+        tmp_line.clear();
+        tmp.clear();
+        data_cond.notify_one();
+    }
+}
 
-        html.checkWord(f,w);//write html
+void Write(std::vector<std::string> &v){
+
+    std::unique_lock<std::mutex> lock(mut);
+    data_cond.wait(lock);
+    std::this_thread::sleep_for(10ms);
+    std::ofstream out("output.html");
+    std::cout << "Writing file...\n";
+    out << "<html>\n";
+    out << "\t<body>\n";
+
+
+    for (auto w:v){
+        out << w << "<br>\n";
+    }
+    out << "\t</body>\n";
+    out << "</html>\n";
+    out.close();
+}
+
+int main(int argc, char* argv[]) {
+    if(argc < 4){std::cerr << "ERROR: NOT ENOUGH ARGUMENTS!\n";return -1;}
+    auto start = std::chrono::steady_clock::now();
+    std::vector<std::string> doc_lines;
+    std::vector<std::string> line_break;
+    std::size_t found;
+    dict2str(argv[1], dict);
+    AddSpecChar2Dict(dict);
+    AddContractions2Dict(dict);
+
+    {
+
+        std::thread t_read(Read,argv[3], ref(doc_lines), ref(line_break));
+        std::thread t_write(Write, ref(doc_lines));
+
+        t_read.join();
+        t_write.join();
     }
 
-    html.endHTML();//end html
+
     auto stop = std::chrono::steady_clock::now();
     auto diff = stop-start;
     std::cout << std::chrono::duration <double, std::milli> (diff).count() << " ms" << "\n";
